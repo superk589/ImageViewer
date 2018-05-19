@@ -58,7 +58,9 @@ open class ItemBaseController<T: UIView>: UIViewController, ItemController, UIGe
 
     // TRANSITIONS
     fileprivate var swipeToDismissTransition: GallerySwipeToDismissTransition?
-
+    
+    // Placeholder
+    public var placeHolderImage : UIImage? = nil;
 
     // MARK: - Initializers
 
@@ -89,7 +91,8 @@ open class ItemBaseController<T: UIView>: UIViewController, ItemController, UIGe
             case .activityViewByLongPress(let enabled):             activityViewByLongPress = enabled
             case .spinnerColor(let color):                          activityIndicatorView.color = color
             case .spinnerStyle(let style):                          activityIndicatorView.activityIndicatorViewStyle = style
-
+            case .placeHolderImage(let phImage):                    placeHolderImage = phImage
+            
             case .displacementTransitionStyle(let style):
 
                 switch style {
@@ -196,7 +199,11 @@ open class ItemBaseController<T: UIView>: UIViewController, ItemController, UIGe
     }
 
     public func fetchImage() {
-
+        
+        if let ph : UIImage = self.placeHolderImage {
+            self.itemView.image = ph
+        }
+        
         fetchImageBlock { [weak self] image in
 
             if let image = image {
@@ -569,10 +576,11 @@ open class ItemBaseController<T: UIView>: UIViewController, ItemController, UIGe
 
                 self?.itemView.alpha = 0
 
-            }, completion: { [weak self] _ in
+                }, completion: { [weak self] _ in
 
-                self?.isAnimating = false
-                completion()
+                    self?.isAnimating = false
+                    completion()
+                    self?.itemView.alpha = 1
             })
         }
     }

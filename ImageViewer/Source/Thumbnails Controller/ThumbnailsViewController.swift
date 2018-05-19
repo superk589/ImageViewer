@@ -20,6 +20,14 @@ class ThumbnailsViewController: UICollectionViewController, UICollectionViewDele
     weak var itemsDataSource: GalleryItemsDataSource!
     var closeButton: UIButton?
     var closeLayout: ButtonLayout?
+    
+    /// An optional Image which will be visible during the load of GalleryItem FetchImageBlock
+    var placeHolderImage : UIImage? = nil
+    
+    //An optional indicator which will be visible during the load of GalleryItem FetchImageBlock
+    var useActivityIndicator = false
+    var thumbnailsactivityIndicatorViewStyle : UIActivityIndicatorViewStyle = .white
+    var thumbnailsactivityIndicatorViewColor : UIColor = UIColor.white
 
     required init(itemsDataSource: GalleryItemsDataSource) {
         self.itemsDataSource = itemsDataSource
@@ -36,7 +44,15 @@ class ThumbnailsViewController: UICollectionViewController, UICollectionViewDele
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
-
+    
+    /// Called when re-initializing to make sure we have the latest data.
+    /// Allows us to cache our instance
+    /// - Parameter itemsDataSource: data source
+    public func updateDataSource(itemsDataSource: GalleryItemsDataSource) {
+        self.itemsDataSource = itemsDataSource
+        self.collectionView?.reloadData()
+    }
+    
     @objc func rotate() {
         guard UIApplication.isPortraitOnly else { return }
 
@@ -103,7 +119,21 @@ class ThumbnailsViewController: UICollectionViewController, UICollectionViewDele
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! ThumbnailCell
 
         let item = itemsDataSource.provideGalleryItem((indexPath as NSIndexPath).row)
-
+        
+        var activityIndicatorView : UIActivityIndicatorView? = nil
+        
+        if let ph : UIImage = self.placeHolderImage {
+            cell.imageView.image = ph
+        } else if (useActivityIndicator) {
+            activityIndicatorView = UIActivityIndicatorView(activityIndicatorStyle: thumbnailsactivityIndicatorViewStyle)
+            activityIndicatorView!.color = thumbnailsactivityIndicatorViewColor
+            activityIndicatorView!.hidesWhenStopped = true
+            activityIndicatorView!.center = cell.contentView.boundsCenter
+            cell.imageView.addSubview(activityIndicatorView!)
+            activityIndicatorView!.startAnimating()
+        }
+        
+        
         switch item {
 
         case .image(let fetchImageBlock):
@@ -111,8 +141,8 @@ class ThumbnailsViewController: UICollectionViewController, UICollectionViewDele
             fetchImageBlock() { image in
 
                 if let image = image {
-
                     cell.imageView.image = image
+                    activityIndicatorView?.stopAnimating()
                 }
             }
 
@@ -123,6 +153,7 @@ class ThumbnailsViewController: UICollectionViewController, UICollectionViewDele
                 if let image = image {
 
                     cell.imageView.image = image
+                    activityIndicatorView?.stopAnimating()
                 }
             }
 
@@ -133,6 +164,7 @@ class ThumbnailsViewController: UICollectionViewController, UICollectionViewDele
                 if let image = image {
 
                     cell.imageView.image = image
+                    activityIndicatorView?.stopAnimating()
                 }
             }
         }

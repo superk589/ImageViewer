@@ -53,6 +53,18 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
     fileprivate var rotationMode = GalleryRotationMode.always
     fileprivate let swipeToDismissFadeOutAccelerationFactor: CGFloat = 6
     fileprivate var decorationViewsFadeDuration = 0.15
+    
+    /// Local instance of ThumbnailsViewController
+    private var thumbnailsController : ThumbnailsViewController? = nil
+    
+    /// Show activity indicator while thumbnail loads
+    private var useThumbnailsActivityIndicator : Bool = false
+    private var thumbnailsactivityIndicatorViewStyle : UIActivityIndicatorViewStyle = .white
+    private var thumbnailsactivityIndicatorViewColor : UIColor = UIColor.white
+    
+    
+    /// An optional Image which will be visible during the load of GalleryItem FetchImageBlock
+    private var placeHolderImage : UIImage? = nil;
 
     /// COMPLETION BLOCKS
     /// If set, the block is executed right after the initial launch animations finish.
@@ -106,8 +118,15 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
             case .colorDismissDuration(let duration):           overlayView.colorDismissDuration = duration
             case .colorDismissDelay(let delay):                 overlayView.colorDismissDelay = delay
             case .continuePlayVideoOnEnd(let enabled):          continueNextVideoOnFinish = enabled
-            case .seeAllCloseLayout(let layout):                seeAllCloseLayout = layout
-            case .videoControlsColor(let color):                scrubber.tintColor = color
+            case .seeAllCloseLayout(let layout):
+                seeAllCloseLayout = layout
+            case .videoControlsColor(let color):
+                scrubber.tintColor = color
+            case .placeHolderImage(let phImage):
+                placeHolderImage = phImage
+            case .thumbnailsSpinnerColor(let color):            thumbnailsactivityIndicatorViewColor = color
+            case .thumbnailsSpinnerStyle(let style):            thumbnailsactivityIndicatorViewStyle = style
+            case .thumbnailsActivityIndicator(let show):        useThumbnailsActivityIndicator = show
             case .closeButtonMode(let buttonMode):
 
                 switch buttonMode {
@@ -168,8 +187,6 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
         ///This less known/used presentation style option allows the contents of parent view controller presenting the gallery to "bleed through" the blurView. Otherwise we would see only black color.
         self.modalPresentationStyle = .overFullScreen
         self.dataSource = pagingDataSource
-
-        UIApplication.applicationWindow.windowLevel = (statusBarHidden) ? UIWindowLevelStatusBar + 1 : UIWindowLevelNormal
 
         NotificationCenter.default.addObserver(self, selector: #selector(GalleryViewController.rotate), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
 
@@ -269,6 +286,8 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
         super.viewDidAppear(animated)
 
         guard initialPresentationDone == false else { return }
+        
+        UIApplication.applicationWindow.windowLevel = (statusBarHidden) ? UIWindowLevelStatusBar + 1 : UIWindowLevelNormal
 
         ///We have to call this here (not sooner), because it adds the overlay view to the presenting controller and the presentingController property is set only at this moment in the VC lifecycle.
         configureOverlayView()
@@ -440,26 +459,35 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
     //ThumbnailsimageBlock
 
     @objc fileprivate func showThumbnails() {
+        
+        if(self.thumbnailsController == nil) {
+            self.thumbnailsController = ThumbnailsViewController(itemsDataSource: self.itemsDataSource)
 
-        let thumbnailsController = ThumbnailsViewController(itemsDataSource: self.itemsDataSource)
+            self.thumbnailsController!.placeHolderImage = placeHolderImage;
+            self.thumbnailsController!.useActivityIndicator = useThumbnailsActivityIndicator
+            self.thumbnailsController!.thumbnailsactivityIndicatorViewColor = thumbnailsactivityIndicatorViewColor;
+            self.thumbnailsController!.thumbnailsactivityIndicatorViewStyle = thumbnailsactivityIndicatorViewStyle;
 
-        if let closeButton = seeAllCloseButton {
-            thumbnailsController.closeButton = closeButton
-            thumbnailsController.closeLayout = seeAllCloseLayout
-        } else if let closeButton = closeButton {
-            let seeAllCloseButton = UIButton(frame: CGRect(origin: CGPoint.zero, size: closeButton.bounds.size))
-            seeAllCloseButton.setImage(closeButton.image(for: UIControlState()), for: UIControlState())
-            seeAllCloseButton.setImage(closeButton.image(for: .highlighted), for: .highlighted)
-            thumbnailsController.closeButton = seeAllCloseButton
-            thumbnailsController.closeLayout = closeLayout
+            if let closeButton = seeAllCloseButton {
+                self.thumbnailsController!.closeButton = closeButton
+                self.thumbnailsController!.closeLayout = seeAllCloseLayout
+            } else if let closeButton = closeButton {
+                let seeAllCloseButton = UIButton(frame: CGRect(origin: CGPoint.zero, size: closeButton.bounds.size))
+                seeAllCloseButton.setImage(closeButton.image(for: UIControlState()), for: UIControlState())
+                seeAllCloseButton.setImage(closeButton.image(for: .highlighted), for: .highlighted)
+                self.thumbnailsController!.closeButton = seeAllCloseButton
+                self.thumbnailsController!.closeLayout = closeLayout
+            }
+            
+            self.thumbnailsController!.onItemSelected = { [weak self] index in
+                self?.page(toIndex: index)
+            }
+        } else {
+            //the controller exists already, but we need to make sure the dataSource is up to date
+            self.thumbnailsController!.updateDataSource(itemsDataSource: self.itemsDataSource)
         }
 
-        thumbnailsController.onItemSelected = { [weak self] index in
-
-            self?.page(toIndex: index)
-        }
-
-        present(thumbnailsController, animated: true, completion: nil)
+        self.present(self.thumbnailsController!, animated: true, completion: nil)
     }
 
     open func page(toIndex index: Int) {
@@ -591,6 +619,7 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
     func closeGallery(_ animated: Bool, completion: (() -> Void)?) {
 
         self.overlayView.removeFromSuperview()
+        initialPresentationDone = false
 
         self.modalTransitionStyle = .crossDissolve
 
@@ -672,7 +701,7 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
     open func itemControllerDidLongPress(_ controller: ItemController, in item: ItemView) {
         switch (controller, item) {
 
-        case (_ as ImageViewController, let item as UIImageView):
+        case (_, let item as UIImageView):
             guard let image = item.image else { return }
             let activityVC = UIActivityViewController(activityItems: [image], applicationActivities: nil)
             self.present(activityVC, animated: true)
