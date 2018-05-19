@@ -18,6 +18,7 @@ public enum ButtonLayout {
 
     case pinLeft(MarginTop, MarginLeft)
     case pinRight(MarginTop, MarginRight)
+    case center(MarginBottom)
 }
 
 /// Represents various possible layouts for the header

@@ -370,7 +370,15 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
             button.autoresizingMask = [.flexibleBottomMargin, .flexibleRightMargin]
             button.frame.origin.x = marginLeft
             button.frame.origin.y = defaultInsets.top + marginTop
+            
+        case .center(let marginBottom):
+            
+            button.autoresizingMask = [.flexibleBottomMargin, .flexibleRightMargin]
+            button.center = self.view.boundsCenter
+            button.frame.origin.y = self.view.bounds.height - button.bounds.height - marginBottom - defaultInsets.bottom
         }
+        
+        
     }
 
     fileprivate func layoutHeaderView() {
