@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import AudioToolbox
 import AVFoundation
 
 open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
@@ -712,11 +713,17 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
         case (_, let item as UIImageView):
             guard let image = item.image else { return }
             let activityVC = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+            AudioServicesPlaySystemSound(1519)
+            activityVC.popoverPresentationController?.sourceView = item
+            activityVC.popoverPresentationController?.sourceRect = .zero
             self.present(activityVC, animated: true)
 
         case (_ as VideoViewController, let item as VideoView):
             guard let videoUrl = ((item.player?.currentItem?.asset) as? AVURLAsset)?.url else { return }
             let activityVC = UIActivityViewController(activityItems: [videoUrl], applicationActivities: nil)
+            AudioServicesPlaySystemSound(1519)
+            activityVC.popoverPresentationController?.sourceView = item
+            activityVC.popoverPresentationController?.sourceRect = .zero
             self.present(activityVC, animated: true)
 
         default:  return
