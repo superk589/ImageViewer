@@ -91,8 +91,10 @@ open class ItemBaseController<T: UIView>: UIViewController, ItemController, UIGe
             case .activityViewByLongPress(let enabled):             activityViewByLongPress = enabled
             case .spinnerColor(let color):                          activityIndicatorView.color = color
             case .spinnerStyle(let style):                          activityIndicatorView.activityIndicatorViewStyle = style
-            case .placeHolderImage(let phImage):                    placeHolderImage = phImage
-            
+            case .placeHolderImage(let phImage):
+                if isInitialController {
+                    placeHolderImage = phImage
+                }
             case .displacementTransitionStyle(let style):
 
                 switch style {
