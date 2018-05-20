@@ -708,6 +708,10 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
     }
 
     open func itemControllerDidLongPress(_ controller: ItemController, longPress: UILongPressGestureRecognizer, in item: ItemView) {
+        guard longPress.state == .began else {
+            return
+        }
+        
         switch (controller, item) {
 
         case (_, let item as UIImageView):
