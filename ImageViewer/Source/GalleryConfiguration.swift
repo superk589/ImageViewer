@@ -170,6 +170,8 @@ public enum GalleryConfigurationItem {
 
     ///Allows to set a placeholder image which will be visible during the load of GalleryItem
     case placeHolderImage(UIImage?)
+    
+    case activityViewControllerCompletionWithItemsHandler(UIActivityViewControllerCompletionWithItemsHandler)
 }
 
 public enum GalleryRotationMode {

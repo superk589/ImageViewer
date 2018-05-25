@@ -62,7 +62,7 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
     private var useThumbnailsActivityIndicator : Bool = false
     private var thumbnailsactivityIndicatorViewStyle : UIActivityIndicatorViewStyle = .white
     private var thumbnailsactivityIndicatorViewColor : UIColor = UIColor.white
-    
+    private var activityViewControllerCompletionWithItemsHandler: UIActivityViewControllerCompletionWithItemsHandler? = nil
     
     /// An optional Image which will be visible during the load of GalleryItem FetchImageBlock
     private var placeHolderImage : UIImage? = nil;
@@ -163,9 +163,12 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
                 case .custom(let button):   deleteButton = button
                 case .builtIn:              break
                 }
-
-                default: break
+                
+            case .activityViewControllerCompletionWithItemsHandler(let handler):
+                activityViewControllerCompletionWithItemsHandler = handler
+            default: break
             }
+            
         }
 
         pagingDataSource = GalleryPagingDataSource(itemsDataSource: itemsDataSource, displacedViewsDataSource: displacedViewsDataSource, scrubber: scrubber, configuration: configuration)
@@ -720,6 +723,7 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
             activityVC.popoverPresentationController?.sourceView = item
             let location = longPress.location(in: item)
             activityVC.popoverPresentationController?.sourceRect = CGRect(origin: location, size: .zero)
+            activityVC.completionWithItemsHandler = activityViewControllerCompletionWithItemsHandler
             self.present(activityVC, animated: true)
         case (_ as VideoViewController, let item as VideoView):
             guard let videoUrl = ((item.player?.currentItem?.asset) as? AVURLAsset)?.url else { return }
@@ -727,6 +731,7 @@ open class GalleryViewController: UIPageViewController, ItemControllerDelegate {
             activityVC.popoverPresentationController?.sourceView = item
             let location = longPress.location(in: item)
             activityVC.popoverPresentationController?.sourceRect = CGRect(origin: location, size: .zero)
+            activityVC.completionWithItemsHandler = activityViewControllerCompletionWithItemsHandler
             self.present(activityVC, animated: true)
 
         default:  return
